@@ -9,7 +9,7 @@ fi
 
 eval "$(scripts/tag-env "${tag}")"
 
-platform="${PLATFORM:-linux/amd64}"
+platform="${PLATFORM:-$(scripts/host-platform)}"
 
 docker buildx build \
   --platform "${platform}" \

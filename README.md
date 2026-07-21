@@ -54,22 +54,23 @@ GitHub Actions will build the upstream Dockerfile and push a multi-platform imag
 scripts/build-plugin protocolbuffers-go/v1.36.10
 ```
 
-By default this builds `linux/amd64` and loads it into the local Docker image store.
-Set `PLATFORM` to build a different single platform:
+By default this builds for the host Docker architecture and loads it into the local Docker
+image store. Set `PLATFORM` to build a different single platform:
 
 ```sh
 PLATFORM=linux/arm64 scripts/build-plugin protocolbuffers-go/v1.36.10
 ```
 
-## Extract a Linux Plugin Binary
+## Install a Docker-backed Local Plugin
 
 After building or pulling one of the images:
 
 ```sh
-scripts/extract-plugin ghcr.io/nekomeowww/buf-build/protocolbuffers-go:v1.36.10 .tools/protoc-plugins
+scripts/install-plugin-wrapper ghcr.io/nekomeowww/buf-build/protocolbuffers-go:v1.36.10 .tools/protoc-plugins
 ```
 
-Then use the extracted executable from `buf.gen.yaml`:
+This creates a local wrapper such as `.tools/protoc-plugins/protoc-gen-go`. Then use the
+wrapper from `buf.gen.yaml`:
 
 ```yaml
 plugins:
@@ -78,5 +79,12 @@ plugins:
     opt: paths=source_relative
 ```
 
-The extracted binary is a Linux binary. It can be used directly in Linux CI, or inside a
-Linux container that runs `buf generate`. It will not run directly on macOS.
+The wrapper keeps the plugin inside Docker and passes Buf's binary plugin protocol over
+stdin/stdout:
+
+```sh
+docker run --rm -i --platform linux/arm64 ghcr.io/nekomeowww/buf-build/protocolbuffers-go:v1.36.10 "$@"
+```
+
+It intentionally does not allocate a TTY. `protoc` plugins communicate with binary
+protobuf streams, and `-t` can corrupt that stream.
