@@ -1,0 +1,3 @@
+[submodule "upstream/bufbuild-plugins"]
+	path = upstream/bufbuild-plugins
+	url = https://github.com/bufbuild/plugins.git

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+image="${1:-}"
+out_dir="${2:-.tools/protoc-plugins}"
+platform="${PLATFORM:-linux/amd64}"
+
+if [[ -z "${image}" ]]; then
+  echo "usage: $0 <image> [out-dir]" >&2
+  echo "example: $0 ghcr.io/nekomeowww/buf-build/protocolbuffers-go:v1.36.10 .tools/protoc-plugins" >&2
+  exit 64
+fi
+
+entrypoint="$(docker image inspect "${image}" --format '{{ index .Config.Entrypoint 0 }}')"
+if [[ -z "${entrypoint}" || "${entrypoint}" == "<no value>" ]]; then
+  echo "image has no entrypoint: ${image}" >&2
+  exit 65
+fi
+
+binary="$(basename "${entrypoint}")"
+mkdir -p "${out_dir}"
+
+container="$(docker create --platform "${platform}" "${image}")"
+trap 'docker rm -f "${container}" >/dev/null 2>&1 || true' EXIT
+
+docker cp "${container}:${entrypoint}" "${out_dir}/${binary}"
+chmod +x "${out_dir}/${binary}"
+
+printf '%s\n' "${out_dir}/${binary}"
